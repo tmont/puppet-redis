@@ -1,6 +1,10 @@
 redis module for puppet
 =======================
 
+0.1.0
+-----
+Allow installation of a different Redis version without deleting/uninstalling
+
 0.0.9
 -----
 Use maestrodev/wget and puppetlabs/gcc to replace some common package dependencies. - @garethr

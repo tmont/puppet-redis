@@ -39,12 +39,16 @@ class redis (
   $redis_src_dir = $redis::params::redis_src_dir,
   $redis_bin_dir = $redis::params::redis_bin_dir
 ) inherits redis::params {
-
-  include wget
   include gcc
+
+  anchor { 'redis::begin':
+    before => [ Class['gcc'], Redis::Instance['redis-default'] ]
+  }
 
   $redis_pkg_name = "redis-${version}.tar.gz"
   $redis_pkg = "${redis_src_dir}/${redis_pkg_name}"
+  $real_redis_bin_dir = "${redis_bin_dir}/redis-${version}"
+  $real_redis_src_dir = "${redis_src_dir}/redis-${version}"
 
   # Install default instance
   redis::instance { 'redis-default': }
@@ -64,40 +68,31 @@ class redis (
     path   => '/var/lib/redis',
   }
 
-  # If the version is 2.4.13, use the tarball that ships with the
-  # module.
-  if ($version == '2.4.13') {
-    file { 'redis-pkg':
-      ensure => present,
-      path   => $redis_pkg,
-      mode   => '0644',
-      source => 'puppet:///modules/redis/redis-2.4.13.tar.gz',
-    }
-  }
   exec { 'get-redis-pkg':
-    command => "/usr/bin/wget --output-document ${redis_pkg} http://redis.googlecode.com/files/${redis_pkg_name}",
-    unless  => "/usr/bin/test -f ${redis_pkg}",
+    command => "wget --output-document ${redis_pkg} http://redis.googlecode.com/files/${redis_pkg_name}",
+    creates => $redis_pkg,
     require => File[$redis_src_dir],
   }
-
-  file { 'redis-cli-link':
-    ensure => link,
-    path   => '/usr/local/bin/redis-cli',
-    target => "${redis_bin_dir}/bin/redis-cli",
-  }
   exec { 'unpack-redis':
-    command => "tar --strip-components 1 -xzf ${redis_pkg}",
+    command => "tar -xzf ${redis_pkg}",
     cwd     => $redis_src_dir,
-    path    => '/bin:/usr/bin',
-    unless  => "test -f ${redis_src_dir}/Makefile",
+    creates => "${real_redis_src_dir}/Makefile",
     require => Exec['get-redis-pkg'],
   }
   exec { 'install-redis':
-    command => "make && make install PREFIX=${redis_bin_dir}",
-    cwd     => $redis_src_dir,
-    path    => '/bin:/usr/bin',
-    unless  => "test $(${redis_bin_dir}/bin/redis-server --version | cut -d ' ' -f 1) = 'Redis'",
+    command => "make && make install PREFIX=${real_redis_bin_dir}",
+    cwd     => $real_redis_src_dir,
+    creates => "${real_redis_bin_dir}/bin/redis-server",
     require => [ Exec['unpack-redis'], Class['gcc'] ],
   }
+  file { 'redis-cli-link':
+    ensure => link,
+    path   => '/usr/local/bin/redis-cli',
+    target => "${real_redis_bin_dir}/bin/redis-cli",
+    require => Exec['install-redis'],
+  }
 
+  anchor { 'redis::end':
+    require => [ File['redis-cli-link'], File['redis-lib'], File['/etc/redis'] ]
+  }
 }
