@@ -42,7 +42,7 @@ class redis (
   include gcc
 
   anchor { 'redis::begin':
-    before => [ Class['gcc'], Redis::Instance['redis-default'] ]
+    before => [ Redis::Instance['redis-default'] ]
   }
 
   $redis_pkg_name = "redis-${version}.tar.gz"
