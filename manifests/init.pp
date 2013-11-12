@@ -69,7 +69,7 @@ class redis (
   }
 
   exec { 'get-redis-pkg':
-    command => "wget --output-document ${redis_pkg} http://redis.googlecode.com/files/${redis_pkg_name}",
+    command => "wget --output-document ${redis_pkg} http://download.redis.io/releases/${redis_pkg_name}",
     creates => $redis_pkg,
     require => File[$redis_src_dir],
   }
