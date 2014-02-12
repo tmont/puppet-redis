@@ -37,7 +37,10 @@
 class redis (
   $version = $redis::params::version,
   $redis_src_dir = $redis::params::redis_src_dir,
-  $redis_bin_dir = $redis::params::redis_bin_dir
+  $redis_bin_dir = $redis::params::redis_bin_dir,
+  $redis_port = $redis::params::redis_port,
+  $redis_max_memory = $redis::params::redis_max_memory,
+  $redis_max_memory_policy = $redis::params::redis_max_memory_policy
 ) inherits redis::params {
   include gcc
 
@@ -51,7 +54,11 @@ class redis (
   $real_redis_src_dir = "${redis_src_dir}/redis-${version}"
 
   # Install default instance
-  redis::instance { 'redis-default': }
+  redis::instance { 'redis-default':
+    redis_port => $redis_port,
+    redis_max_memory => $redis_max_memory,
+    redis_max_memory_policy => $redis_max_memory_policy
+  }
 
   File {
     owner => root,
